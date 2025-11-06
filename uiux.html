@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Goal-Based Attendance Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <!-- Lucide icons for the 'i' icon and others -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        /* New Color Definitions based on LPU Theme */
+        :root {
+            --lpu-primary: #FF7F50; /* A shade of Coral/Orange */
+            --lpu-secondary: #FFD700; /* Gold/Yellow */
+            --lpu-dark: #1F2937;
+            --color-green: #10B981; /* Tailwind Green-500 */
+            --color-yellow: #F59E0B; /* Tailwind Amber-500 */
+            --color-red: #EF4444; /* Tailwind Red-500 */
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+        }
+        .subject-card {
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.06);
+            transition: transform 0.2s;
+        }
+        .subject-card:hover {
+            transform: translateY(-2px);
+        }
+
+        /* * Group 1 and Goal Bar Gradient Style 
+         * UPDATED: Orange (Primary) on the left, Yellow (Secondary) on the right, Orange is dominant (65% stop) 
+         */
+        .group-gradient {
+            background: linear-gradient(to right, var(--lpu-primary) 65%, var(--lpu-secondary));
+        }
+
+        /* --- CUSTOM DROPDOWN STYLING START --- */
+        .custom-select-wrapper {
+            position: relative;
+        }
+        .custom-select-wrapper select {
+            /* Hide default browser arrow and reserve space for the custom icon */
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            padding-right: 2.5rem !important; 
+        }
+        .select-arrow {
+            position: absolute;
+            top: 50%;
+            right: 0.5rem;
+            transform: translateY(-50%);
+            pointer-events: none; /* Allows interaction on the underlying select */
+            color: var(--lpu-dark);
+            transition: transform 0.2s ease-out;
+        }
+        /* Rotates the arrow when the select element is focused (open) */
+        .custom-select-wrapper:focus-within .select-arrow {
+            transform: translateY(-50%) rotate(180deg);
+        }
+        /* --- CUSTOM DROPDOWN STYLING END --- */
+
+
+        /* Custom styles for the circular progress ring (Border style) */
+        .progress-ring-container {
+            position: relative;
+            width: 80px;
+            height: 80px;
+        }
+        .progress-ring-container svg {
+            transform: rotate(-90deg);
+        }
+        .progress-ring-circle {
+            transition: stroke-dashoffset 0.35s;
+            stroke-width: 6; /* Thickness of the ring */
+            fill: transparent;
+        }
+        .progress-ring-background {
+            stroke: #e5e7eb; /* Light gray background track */
+            stroke-width: 6;
+            fill: transparent;
+        }
+        .progress-ring-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--lpu-dark);
+        }
+    </style>
+</head>
+<body class="min-h-screen">
+
+    <!-- Header -->
+    <header class="sticky top-0 bg-white shadow-md z-10">
+        <div class="p-4 flex items-center justify-between">
+            <button onclick="console.log('Back button clicked')">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-arrow-left text-gray-700"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>
+            </button>
+            <h1 class="text-xl font-semibold text-gray-800">Attendance Dashboard</h1>
+            <!-- Aggregate Attendance Display (Displays 81% based on mock data average) -->
+            <div class="group-gradient text-xs font-bold text-white px-2 py-1 rounded-full shadow-md">81%</div>
+        </div>
+    </header>
+
+    <!-- Goal Setting Bar - UPDATED to use the orange/yellow dominant gradient -->
+    <div class="group-gradient p-4 shadow-lg flex flex-col sm:flex-row items-center justify-between space-y-3 sm:space-y-0 text-white">
+        <label for="goal-select" class="text-sm font-medium">Set Target Attendance Goal:</label>
+        
+        <div class="flex items-center space-x-2 w-full sm:w-auto">
+            <!-- Custom Dropdown Wrapper -->
+            <div class="custom-select-wrapper">
+                <select id="goal-select" 
+                        onchange="setGoal(this.value)" 
+                        class="p-2 rounded-lg text-sm font-semibold bg-white text-gray-800 border-2 border-transparent focus:ring-2 focus:ring-white focus:border-white transition-all cursor-pointer shadow-md">
+                    <option value="75" selected>75% (Minimum)</option>
+                    <option value="80">80% (Safe Target)</option>
+                    <option value="85">85% (Optimal)</option>
+                    <option value="90">90% (High Achiever)</option>
+                </select>
+                <!-- Custom Arrow Icon (Lucide ChevronDown) -->
+                <svg class="select-arrow w-5 h-5" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+            </div>
+            <span class="text-xs opacity-80">Selected Goal</span>
+        </div>
+    </div>
+
+    <!-- Main Content: Attendance List -->
+    <main class="p-4 space-y-4 max-w-lg mx-auto" id="attendance-list">
+        <!-- Subject cards will be rendered here by JavaScript -->
+    </main>
+
+    <!-- Info Modal (used for the 'i' icon) -->
+    <div id="info-modal" class="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm hidden items-center justify-center p-4 z-50" onclick="closeModal(event)">
+        <div class="bg-white rounded-xl p-6 shadow-2xl max-w-sm w-full transition-all duration-300 transform scale-95" onclick="event.stopPropagation()">
+            <div class="flex justify-between items-center border-b pb-2 mb-4">
+                <h3 class="text-xl font-bold text-indigo-700" id="modal-subject-name"></h3>
+                <button onclick="document.getElementById('info-modal').classList.add('hidden');" class="text-gray-500 hover:text-gray-800 transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-x"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                </button>
+            </div>
+            
+            <div id="modal-content" class="space-y-3 text-gray-700">
+                <!-- Content will be injected here -->
+            </div>
+            <div class="mt-4 pt-3 border-t text-xs text-gray-500">
+                <p>*Calculations are based on the latest data and your set goal.</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- 1. MOCK DATA (Updated to reflect specific percentages) ---
+        const attendanceData = [
+            // Subject 1: ~90.4% (Green Ring) - User requested 91%
+            { id: 'IXD801', name: 'INTERACTION DESIGN (OM)', faculty: 'Shreya Singh', attended: 19, delivered: 21, dutyLeaves: 0, bonusAtt: 0, section: 'K0132' }, 
+            // Subject 2: 40% (Red Ring)
+            { id: 'PEAS05', name: 'ANALYTICAL - V (PE)', faculty: 'Manpreet Kaur', attended: 4, delivered: 10, dutyLeaves: 2, bonusAtt: 0, section: '9R884' }, 
+            // Subject 3: ~73.3% (Yellow Ring) - User requested 73%
+            { id: 'PEV301', name: 'VERBAL ABILITY (PW)', faculty: 'Poonam Tarpial', attended: 11, delivered: 15, dutyLeaves: 0, bonusAtt: 0, section: '38-512-C1' },
+            // Subject 4: 85% (Green Ring)
+            { id: 'BT101', name: 'BASIC PYTHON PROGRAMMING', faculty: 'Dr. A. Sharma', attended: 17, delivered: 20, dutyLeaves: 1, bonusAtt: 0, section: 'L102A' },
+            // Subject 5: 100% (Green Ring)
+            { id: 'CS102', name: 'DATA STRUCTURES', faculty: 'J. Kaur', attended: 15, delivered: 15, dutyLeaves: 0, bonusAtt: 0, section: 'B0011' },
+        ];
+
+        let currentGoal = 75; // Default goal
+
+        // --- NEW: Color Logic based on thresholds ---
+        function getAttendanceColor(percentage) {
+            // Note: Thresholds are set at >=75% for high, >=50% for mid, otherwise low
+            if (percentage >= 75) {
+                return 'var(--color-green)'; // High attendance (Green)
+            } else if (percentage >= 50) {
+                return 'var(--color-yellow)'; // Mid/Critical attendance (Yellow)
+            } else {
+                return 'var(--color-red)'; // Low/Danger attendance (Red)
+            }
+        }
+        
+        // --- 2. CALCULATOR LOGIC (No changes needed here) ---
+        function calculateRequiredLectures(subject, goal) {
+            const A = subject.attended; // Attended
+            const D = subject.delivered; // Delivered
+            const G = goal; // Goal percentage
+
+            const effectiveAttended = A + subject.bonusAtt;
+            const currentPercentage = (effectiveAttended / D) * 100;
+            
+            if (currentPercentage >= G) {
+                return { 
+                    status: 'achieved', 
+                    current: currentPercentage.toFixed(1),
+                    needed: 0
+                };
+            }
+
+            // Calculation: N >= (G * D - 100 * A) / (100 - G)
+            let required_N = (G * D - 100 * effectiveAttended) / (100 - G);
+            
+            // If G is 100, the formula changes to simple difference
+            if (G === 100) {
+                required_N = D - effectiveAttended;
+            }
+
+            // We need the smallest whole number of classes to attend
+            const lecturesNeeded = Math.ceil(required_N);
+
+            return { 
+                status: 'pending', 
+                current: currentPercentage.toFixed(1),
+                needed: Math.max(0, lecturesNeeded) // Ensure it's not negative
+            };
+        }
+
+        // --- 3. UI RENDERING (Uses the gradient and ring styles) ---
+        function renderAttendanceList() {
+            const listContainer = document.getElementById('attendance-list');
+            listContainer.innerHTML = ''; // Clear previous list
+
+            // Constants for the SVG ring
+            const radius = 35;
+            const circumference = 2 * Math.PI * radius;
+            const size = 80;
+
+            attendanceData.forEach(subject => {
+                // Calculation uses effective attended (attended + bonusAtt)
+                const effectiveAttended = subject.attended + subject.bonusAtt;
+                const currentAtt = (effectiveAttended / subject.delivered * 100).toFixed(0);
+                const progressPercentage = Math.min(100, currentAtt);
+                
+                // Calculate dash offset for the ring
+                const offset = circumference - (progressPercentage / 100) * circumference;
+                
+                // Get the color based on the percentage
+                const ringColor = getAttendanceColor(parseFloat(currentAtt));
+
+                const card = document.createElement('div');
+                
+                // Note: Added the 'group-gradient' class to the Group badge for LPU style
+                card.className = 'subject-card bg-white p-4 rounded-xl flex justify-between items-start';
+                card.innerHTML = `
+                    <!-- Text Content Area: Added min-w-0 for responsiveness -->
+                    <div class="flex-grow space-y-1 min-w-0">
+                        <!-- UPDATED: Added flex-wrap and gap-x-2. Removed justify-between. 
+                             This allows the badge to drop to the next line if the title is too long. -->
+                        <div class="flex flex-wrap items-start gap-x-2">
+                            <!-- Title: Removed flex-grow and pr-2. The title will naturally wrap. -->
+                            <h2 class="text-base font-bold text-gray-800">${subject.id} - ${subject.name}</h2>
+                            <!-- Group Badge: Always fixed width, will wrap below title if necessary -->
+                            <div class="group-gradient text-xs font-bold text-white px-2 py-1 rounded-md shadow-sm flex-shrink-0">Group: 1</div>
+                        </div>
+                        <p class="text-xs text-gray-500">Faculty: ${subject.faculty}</p>
+                        <p class="text-sm">Attended/Delivered: <span class="font-semibold">${subject.attended}/${subject.delivered}</span></p>
+                        <p class="text-sm text-gray-600">Duty Leaves: ${subject.dutyLeaves}</p>
+                        <div class="flex justify-between mt-2 pt-2 border-t border-gray-100">
+                            <span class="text-xs font-medium text-indigo-500">Section: ${subject.section}</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Circular Progress Ring (SVG) -->
+                    <div class="ml-4 flex-shrink-0 relative">
+                        <div class="progress-ring-container">
+                            <svg width="${size}" height="${size}">
+                                <!-- Background Circle -->
+                                <circle class="progress-ring-background" cx="${size/2}" cy="${size/2}" r="${radius}"></circle>
+                                <!-- Progress Circle -->
+                                <circle 
+                                    class="progress-ring-circle" 
+                                    stroke="${ringColor}" 
+                                    cx="${size/2}" cy="${size/2}" r="${radius}" 
+                                    stroke-dasharray="${circumference} ${circumference}" 
+                                    style="stroke-dashoffset: ${offset};"
+                                ></circle>
+                            </svg>
+                            <span class="progress-ring-text">${currentAtt}%</span>
+                        </div>
+                        
+                        <!-- Info Icon placed near the progress ring -->
+                        <button class="i-icon absolute -right-2 -top-2 text-gray-400 hover:text-indigo-600 transition-colors p-1" onclick="showInsights('${subject.id}')">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-info"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+                        </button>
+                    </div>
+                `;
+                listContainer.appendChild(card);
+            });
+        }
+
+        // --- 4. GOAL SETTING & HANDLER (No changes needed here) ---
+        function setGoal(goalValue) {
+            currentGoal = parseInt(goalValue, 10);
+            renderAttendanceList();
+            console.log(`Attendance goal set to: ${currentGoal}%`);
+        }
+
+        // --- 5. MODAL LOGIC (Uses the same color logic) ---
+        function showInsights(subjectId) {
+            const subject = attendanceData.find(s => s.id === subjectId);
+            if (!subject) return;
+
+            const calculation = calculateRequiredLectures(subject, currentGoal);
+            
+            const modalSubjectName = document.getElementById('modal-subject-name');
+            const modalContent = document.getElementById('modal-content');
+            const infoModal = document.getElementById('info-modal');
+
+            modalSubjectName.textContent = `${subject.id} - Goal Insights`;
+
+            let contentHTML = '';
+            const currentAtt = parseFloat(calculation.current);
+            const statusColor = getAttendanceColor(currentAtt);
+
+            if (calculation.status === 'achieved') {
+                contentHTML = `
+                    <div class="text-center py-4 bg-green-50 rounded-lg border border-green-200">
+                        <p class="text-3xl mb-2">🎉</p>
+                        <p class="text-lg font-bold text-green-700">Goal Achieved!</p>
+                        <p class="text-sm text-gray-600">Your current effective attendance is <span style="color: ${statusColor};" class="font-bold">${calculation.current}%</span> against the ${currentGoal}% goal.</p>
+                    </div>
+                `;
+            } else {
+                // Warning color logic for lectures needed
+                const neededColor = currentAtt < 50 ? 'var(--color-red)' : 'var(--color-yellow)';
+
+                contentHTML = `
+                    <div class="p-3 bg-indigo-50 rounded-lg">
+                        <p class="text-base font-semibold text-gray-800">Target Goal: <span class="text-indigo-600">${currentGoal}%</span></p>
+                        <p class="text-base font-semibold text-gray-800">Current Effective Att.: <span style="color: ${statusColor};" class="font-bold">${calculation.current}%</span></p>
+                    </div>
+                    <div class="border-y py-3 my-2">
+                        <p class="text-xl font-bold" style="color: ${neededColor};">
+                            Attend <span class="text-3xl">${calculation.needed}</span> more lectures
+                        </p>
+                        <p class="text-sm text-gray-500">consecutively to reach the ${currentGoal}% goal.</p>
+                    </div>
+                `;
+            }
+
+            contentHTML += `
+                <h4 class="font-bold mt-4 text-indigo-600">Backup and Bonus</h4>
+                <p class="text-sm">
+                    <span class="font-semibold">Duty Leaves Backup:</span> 
+                    ${subject.dutyLeaves} available.
+                </p>
+                <p class="text-sm">
+                    <span class="font-semibold">Attendance Bonus (Pending Update):</span> 
+                    +${subject.bonusAtt} lecture${subject.bonusAtt !== 1 ? 's' : ''} added to your attended count for calculation.
+                </p>
+            `;
+
+            modalContent.innerHTML = contentHTML;
+            infoModal.classList.remove('hidden');
+            infoModal.classList.add('flex');
+        }
+
+        function closeModal(event) {
+            if (event.target.id === 'info-modal') {
+                document.getElementById('info-modal').classList.add('hidden');
+            }
+        }
+
+
+        // --- 6. INITIALIZATION ---
+        window.onload = () => {
+            // Set the initial goal and render the list
+            const initialGoal = document.getElementById('goal-select').value;
+            setGoal(initialGoal);
+        };
+    </script>
+</body>
+</html>
