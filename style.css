@@ -1,0 +1,83 @@
+        /* New Color Definitions based on LPU Theme */
+        :root {
+            --lpu-primary: #FF7F50; /* A shade of Coral/Orange */
+            --lpu-secondary: #FFD700; /* Gold/Yellow */
+            --lpu-dark: #1F2937;
+            --color-green: #10B981; /* Tailwind Green-500 */
+            --color-yellow: #F59E0B; /* Tailwind Amber-500 */
+            --color-red: #EF4444; /* Tailwind Red-500 */
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+        }
+        .subject-card {
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.06);
+            transition: transform 0.2s;
+        }
+        .subject-card:hover {
+            transform: translateY(-2px);
+        }
+
+        /* * Group 1 and Goal Bar Gradient Style 
+         * UPDATED: Orange (Primary) on the left, Yellow (Secondary) on the right, Orange is dominant (65% stop) 
+         */
+        .group-gradient {
+            background: linear-gradient(to right, var(--lpu-primary) 65%, var(--lpu-secondary));
+        }
+
+        /* --- CUSTOM DROPDOWN STYLING START --- */
+        .custom-select-wrapper {
+            position: relative;
+        }
+        .custom-select-wrapper select {
+            /* Hide default browser arrow and reserve space for the custom icon */
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            padding-right: 2.5rem !important; 
+        }
+        .select-arrow {
+            position: absolute;
+            top: 50%;
+            right: 0.5rem;
+            transform: translateY(-50%);
+            pointer-events: none; /* Allows interaction on the underlying select */
+            color: var(--lpu-dark);
+            transition: transform 0.2s ease-out;
+        }
+        /* Rotates the arrow when the select element is focused (open) */
+        .custom-select-wrapper:focus-within .select-arrow {
+            transform: translateY(-50%) rotate(180deg);
+        }
+        /* --- CUSTOM DROPDOWN STYLING END --- */
+
+
+        /* Custom styles for the circular progress ring (Border style) */
+        .progress-ring-container {
+            position: relative;
+            width: 80px;
+            height: 80px;
+        }
+        .progress-ring-container svg {
+            transform: rotate(-90deg);
+        }
+        .progress-ring-circle {
+            transition: stroke-dashoffset 0.35s;
+            stroke-width: 6; /* Thickness of the ring */
+            fill: transparent;
+        }
+        .progress-ring-background {
+            stroke: #e5e7eb; /* Light gray background track */
+            stroke-width: 6;
+            fill: transparent;
+        }
+        .progress-ring-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--lpu-dark);
+        }
